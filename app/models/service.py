@@ -1,4 +1,9 @@
+from pydantic import BaseModel
+import pymongo
 
+client = pymongo.MongoClient("mongodb://localhost:27017/")
+db = client["service_provider"]
+service_data = db["services_info"]
 class Service(BaseModel):
     service_id: str
     service_name: str
