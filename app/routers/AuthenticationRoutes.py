@@ -1,6 +1,6 @@
 # Authenticate User and Generate JWT Token
 import jwt
-from fastapi import Header, HTTPException, FastAPI, Response
+from fastapi import Header, HTTPException, FastAPI, Response, APIRouter
 from fastapi.params import Depends
 
 
@@ -10,7 +10,7 @@ from app.core import security
 from app.database import db_connection
 from app.models import authenticate
 
-
+router = APIRouter()
 
 def authenticate_user(email: str, password: str):
     user = db_connection.service_provider.find_one({"email": email, "password": password})
@@ -39,20 +39,20 @@ def authenticate_forgot_user(email: str):
     else:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
 
-app = FastAPI()
-@app.post("/login")
+
+@router.post("/login")
 def login(email: str, password: str):
     access_token = authenticate_user(email, password)
     return {"access_token": access_token}
 
 
 # Protected Route
-@app.get("/protected")
+@router.get("/protected")
 def protected(email: str = Depends(verify_token)):
     return {"message": "Welcome to the protected route, {}".format(email)}
 
 
-@app.post("/register")
+@router.post("/register")
 async def set_data(user: authenticate.Authentication, response: Response):
     if authenticate.service_provider.find_one({"email": user.email}):
         response.headers["Location"] = "/dashboard"
@@ -64,7 +64,7 @@ async def set_data(user: authenticate.Authentication, response: Response):
     # Reset Password
 
 
-@app.put("/reset")
+@router.put("/reset")
 def reset_password(user: authenticate.Authentication):
     access_token = authenticate_forgot_user(user.email)
     if authenticate.service_provider.update_one({"email": user.email}, {"$set": {"password": user.password}}):
